@@ -1,7 +1,7 @@
 import os
-from pyspark.sql import SparkSession
-import pyspark.sql.functions as f
 
+import pyspark.sql.functions as f
+from pyspark.sql import SparkSession
 
 spark = SparkSession.builder.master('local[*]').getOrCreate()
 sc = spark.sparkContext
@@ -12,14 +12,11 @@ dataset = spark.read.parquet(f"file://{current_dir}/dataset.parquet")
 
 dataset.cache().count()
 print('set uids')
-uids = (
-    dataset.select('u').distinct()
-    .rdd.flatMap(lambda e: e).takeSample(False, 1000, seed)
-)
+uids = dataset.select('u').distinct().rdd.flatMap(lambda e: e).takeSample(False, 1000, seed)
 print('get train set')
 dataset_test = dataset.filter(f.col('u').isin(uids))
 print('get test set')
-dataset_train = dataset.filter(f.col('u').isin(uids) == False)
+dataset_train = dataset.filter(f.col('u').isin(uids) is False)
 print('write to local')
 dataset_train.write.parquet(f"file://{current_dir}/dataset_train.parquet")
 dataset_test.write.parquet(f"file://{current_dir}/dataset_test.parquet")
