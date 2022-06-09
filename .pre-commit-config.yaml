@@ -1,0 +1,76 @@
+---
+default_language_version:
+  python: python3
+default_stages: [commit]
+repos:
+  - repo: meta
+    hooks:
+      - id: identity
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.2.0
+    hooks:
+      - id: check-toml
+      - id: check-yaml
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+  - repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.9.0
+    hooks:
+      - id: python-use-type-annotations
+      - id: python-no-log-warn
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v2.32.1
+    hooks:
+      - id: pyupgrade
+        args: ["--py310-plus"]
+  - repo: https://github.com/psf/black
+    rev: 22.3.0
+    hooks:
+      - id: black
+  - repo: https://github.com/markdownlint/markdownlint
+    rev: v0.11.0
+    hooks:
+      - id: markdownlint
+        args: [-s, .markdownlint.rb]
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.26.3
+    hooks:
+      - id: yamllint
+  - repo: https://github.com/PyCQA/flake8
+    rev: 4.0.1
+    hooks:
+      - id: flake8
+        additional_dependencies:
+          - flake8-bugbear
+          - flake8-comprehensions
+          - flake8-debugger
+          - flake8-string-format
+  - repo: https://github.com/PyCQA/pydocstyle
+    rev: 6.1.1
+    hooks:
+      - id: pydocstyle
+        additional_dependencies:
+          - toml
+  - repo: https://github.com/pycqa/isort
+    rev: 5.10.1
+    hooks:
+      - id: isort
+        name: Sort imports in Python files
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v0.960
+    hooks:
+      - id: mypy
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v1.3.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+  - repo: local
+    hooks:
+      - id: doctest
+        name: run doctest
+        entry: pytest --doctest-modules --cov-fail-under 0 spark_svd
+        language: python
+        files: ^spark_svd/
+        types: [file, python]

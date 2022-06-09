@@ -1,22 +1,23 @@
-""" An implementation of SVD++ in PySpark"""
-from typing import List, Tuple, Union, Dict, Optional
+"""An implementation of SVD++ in PySpark."""
 import time
+
 import numpy as np
 import pyspark
 from pyspark.sql.types import (
-    IntegerType, StringType, StructField, StructType, DoubleType
+    DoubleType,
+    IntegerType,
+    StringType,
+    StructField,
+    StructType,
 )
-from ..utils.dataset import Dataset
 
+from ..utils.dataset import Dataset
 
 DEFAULT_LOGLEVEL = 'ERROR'
 
 
-def get_u_impl_fdb(n_users: int,
-                   n_factors: int,
-                   ur: Dict[int, List[int]],
-                   yj: np.ndarray) -> np.ndarray:
-    """Compute user implicit feedback"""
+def get_u_impl_fdb(n_users: int, n_factors: int, ur: dict[int, list[int]], yj: np.ndarray) -> np.ndarray:
+    """Compute user implicit feedback."""
     # check parameters
     if not isinstance(n_users, int) and n_users <= 0:
         raise ValueError
@@ -29,8 +30,7 @@ def get_u_impl_fdb(n_users: int,
             raise TypeError
         if not isinstance(i_indices, list):
             raise TypeError
-        if not all(isinstance(i_index, int) and i_index >= 0
-                   for i_index in i_indices):
+        if not all(isinstance(i_index, int) and i_index >= 0 for i_index in i_indices):
             raise ValueError
     if not isinstance(yj, np.ndarray):
         raise TypeError
@@ -45,25 +45,33 @@ def get_u_impl_fdb(n_users: int,
     return u_impl_fdb
 
 
-def map_sgd(loss_list: Tuple[int, int, float],
-            bi: np.ndarray,
-            bu: np.ndarray,
-            qi: np.ndarray,
-            pu: np.ndarray,
-            yj: np.ndarray,
-            u_impl_fdb: np.ndarray,
-            lr_bi: Union[float, int],
-            lr_bu: Union[float, int],
-            lr_qi: Union[float, int],
-            lr_pu: Union[float, int],
-            lr_yj: Union[float, int],
-            reg_bi: Union[float, int],
-            reg_bu: Union[float, int],
-            reg_qi: Union[float, int],
-            reg_pu: Union[float, int],
-            reg_yj: Union[float, int],
-            ur: Dict[int, List[int]]) -> Tuple[Tuple[str, np.ndarray]]:
-    """Update paramaters"""
+def map_sgd(
+    loss_list: list[tuple[int, int, float]],
+    bi: np.ndarray,
+    bu: np.ndarray,
+    qi: np.ndarray,
+    pu: np.ndarray,
+    yj: np.ndarray,
+    u_impl_fdb: np.ndarray,
+    lr_bi: float | int,
+    lr_bu: float | int,
+    lr_qi: float | int,
+    lr_pu: float | int,
+    lr_yj: float | int,
+    reg_bi: float | int,
+    reg_bu: float | int,
+    reg_qi: float | int,
+    reg_pu: float | int,
+    reg_yj: float | int,
+    ur: dict[int, list[int]],
+) -> tuple[
+    tuple[str, np.ndarray],
+    tuple[str, np.ndarray],
+    tuple[str, np.ndarray],
+    tuple[str, np.ndarray],
+    tuple[str, np.ndarray],
+]:
+    """Update paramaters."""
     for i, u, loss in loss_list:
         # update parameters
         Iu = ur[u]
@@ -82,20 +90,21 @@ def map_sgd(loss_list: Tuple[int, int, float],
     return (('bi', bi), ('bu', bu), ('qi', qi), ('pu', pu), ('yj', yj))
 
 
-def map_loss(indices: List[Tuple[int, int]],
-             ratings: List[Union[float, int]],
-             global_mean: Union[int, float],
-             bi: np.ndarray,
-             bu: np.ndarray,
-             qi: np.ndarray,
-             pu: np.ndarray,
-             u_impl_fdb: np.ndarray) -> List[Tuple[int, int, float]]:
-    """Compute loss"""
+def map_loss(
+    indices: list[tuple[int, int]],
+    ratings: list[float | int],
+    global_mean: int | float,
+    bi: np.ndarray,
+    bu: np.ndarray,
+    qi: np.ndarray,
+    pu: np.ndarray,
+    u_impl_fdb: np.ndarray,
+) -> list[tuple[int, int, float]]:
+    """Compute loss."""
     # check parameters
     if not isinstance(indices, list):
         raise TypeError
-    if not all(isinstance(i, int) and isinstance(u, int) and i >= 0 and u >= 0
-               for (i, u) in indices):
+    if not all(isinstance(i, int) and isinstance(u, int) and i >= 0 and u >= 0 for (i, u) in indices):
         raise ValueError
     if not all(isinstance(r, (float, int)) for r in ratings):
         raise TypeError
@@ -115,24 +124,26 @@ def map_loss(indices: List[Tuple[int, int]],
     loss_list = []
     for (i, u), r in zip(indices, ratings):
         # compute loss
-        dot = .0
+        dot = 0.0
         dot += qi[i].dot(pu[u] + u_impl_fdb[u])
         loss = r - (global_mean + 1.5 * bu[u] + bi[i] + dot)
         loss_list.append((i, u, loss))
     return loss_list
 
 
-def get_top_n_items(indices: Tuple[Tuple[int, int]],
-                    top_n: int,
-                    global_mean: Union[int, float],
-                    bi: np.ndarray,
-                    bu: np.ndarray,
-                    qi: np.ndarray,
-                    pu: np.ndarray,
-                    u_impl_fdb: np.ndarray,
-                    item_index_id: dict,
-                    user_index_id: dict) -> List[tuple]:
-    """Get top-N items for each user"""
+def get_top_n_items(
+    indices: tuple[tuple[int, int], tuple[int, int]],
+    top_n: int,
+    global_mean: int | float,
+    bi: np.ndarray,
+    bu: np.ndarray,
+    qi: np.ndarray,
+    pu: np.ndarray,
+    u_impl_fdb: np.ndarray,
+    item_index_id: dict,
+    user_index_id: dict,
+) -> list[tuple[int, int, float, int]]:
+    """Get top-N items for each user."""
     # check parameters
     if not isinstance(indices, tuple):
         raise TypeError
@@ -164,26 +175,21 @@ def get_top_n_items(indices: Tuple[Tuple[int, int]],
         raise TypeError
     if not isinstance(item_index_id, dict):
         raise TypeError
-    if not all((isinstance(index, int) and index >= 0)
-               for index in item_index_id.keys()):
+    if not all((isinstance(index, int) and index >= 0) for index in item_index_id.keys()):
         raise ValueError
     if not isinstance(user_index_id, dict):
         raise TypeError
-    if not all((isinstance(index, int) and index >= 0)
-               for index in user_index_id.keys()):
+    if not all((isinstance(index, int) and index >= 0) for index in user_index_id.keys()):
         raise ValueError
 
     i_start, i_end = indices[0]
     u_start, u_end = indices[1]
-    pu = pu[u_start: u_end]
-    u_impl_fdb = u_impl_fdb[u_start: u_end]
-    qi = qi[i_start: i_end]
-    bu = bu[u_start: u_end]
-    bi = bi[i_start: i_end]
-    iumat = (
-        global_mean + (1.5 * bu) + bi.reshape(bi.size, 1)
-        + qi.dot((pu + u_impl_fdb).T)
-    )
+    pu = pu[u_start:u_end]
+    u_impl_fdb = u_impl_fdb[u_start:u_end]
+    qi = qi[i_start:i_end]
+    bu = bu[u_start:u_end]
+    bi = bi[i_start:i_end]
+    iumat = global_mean + (1.5 * bu) + bi.reshape(bi.size, 1) + qi.dot((pu + u_impl_fdb).T)
     uimat = iumat.T
     urmat = np.argsort(-uimat, axis=1)[:, :top_n]
     output = []
@@ -192,23 +198,22 @@ def get_top_n_items(indices: Tuple[Tuple[int, int]],
         for rank, item_idx in enumerate(item_indices):
             rating_pred = float(uimat[user_idx, item_idx])
             item_id = item_index_id[item_idx + i_start]
-            output.append((item_id, user_id, rating_pred, rank+1))
+            output.append((item_id, user_id, rating_pred, rank + 1))
     return output
 
 
-def run(spark: pyspark.sql.SparkSession,
-        n_pars: int,
-        input_data_path: str,
-        output_data_path: Optional[str]) -> None:
-    """Main entry"""
+def run(
+    spark: pyspark.sql.SparkSession, n_pars: int, input_data_path: str, output_data_path: str | None
+) -> None:
+    """Run the application."""
     # check parameters
     if not isinstance(spark, pyspark.sql.SparkSession):
         raise TypeError
     if not isinstance(n_pars, int) and n_pars <= 0:
         raise ValueError
-    if input_data_path is not None and not isinstance(input_data_path, str):
+    if not isinstance(input_data_path, str):
         raise ValueError
-    if output_data_path is not None and not isinstance(output_data_path, str):
+    if not isinstance(output_data_path, str):
         raise ValueError
     if not input_data_path.endswith('.parquet'):
         raise ValueError
@@ -226,16 +231,16 @@ def run(spark: pyspark.sql.SparkSession,
     n_factors = 32
     top_n = 10
     rstate = np.random.RandomState(9999)
-    lr_bu = .007
-    lr_bi = .007
-    lr_qi = .007
-    lr_pu = .007
-    lr_yj = .007
-    reg_bu = .02
-    reg_bi = .02
-    reg_qi = .02
-    reg_pu = .02
-    reg_yj = .02
+    lr_bu = 0.007
+    lr_bi = 0.007
+    lr_qi = 0.007
+    lr_pu = 0.007
+    lr_yj = 0.007
+    reg_bu = 0.02
+    reg_bi = 0.02
+    reg_qi = 0.02
+    reg_pu = 0.02
+    reg_yj = 0.02
 
     # 2. Set up SparkSession
     sc = spark.sparkContext
@@ -244,8 +249,7 @@ def run(spark: pyspark.sql.SparkSession,
     # 3. Load data and transform data into spark dataframe dtype
     print('load data')
     dataset = Dataset()
-    dataset.load_dataset(spark, input_data_path,
-                         item_col, user_col, rating_col, n_pars)
+    dataset.load_dataset(spark, input_data_path, item_col, user_col, rating_col, n_pars)
     n_items = dataset.n_items
     n_users = dataset.n_users
     indents = ' ' * 4
@@ -264,9 +268,9 @@ def run(spark: pyspark.sql.SparkSession,
     assert global_mean > 0
     bu = np.zeros(n_users, np.float32)
     bi = np.zeros(n_items, np.float32)
-    qi = rstate.normal(0, .1, (n_items, n_factors)).astype(np.float32)
-    pu = rstate.normal(0, .1, (n_users, n_factors)).astype(np.float32)
-    yj = rstate.normal(0, .1, (n_items, n_factors)).astype(np.float32)
+    qi = rstate.normal(0, 0.1, (n_items, n_factors)).astype(np.float32)
+    pu = rstate.normal(0, 0.1, (n_users, n_factors)).astype(np.float32)
+    yj = rstate.normal(0, 0.1, (n_items, n_factors)).astype(np.float32)
 
     print('compute the user_implicit_feedback')
     u_impl_fdb = get_u_impl_fdb(n_users, n_factors, ur, yj)
@@ -305,7 +309,8 @@ def run(spark: pyspark.sql.SparkSession,
                 bi=bi_bcast.value,
                 bu=bu_bcast.value,
                 qi=qi_bcast.value,
-                pu=pu_bcast.value)
+                pu=pu_bcast.value,
+            )
         )
 
         n_samples = loss_rdd.map(len).sum()
@@ -331,7 +336,7 @@ def run(spark: pyspark.sql.SparkSession,
                 reg_qi=reg_qi,
                 reg_pu=reg_pu,
                 reg_yj=reg_yj,
-                ur=ur_bcast.value
+                ur=ur_bcast.value,
             )
         )
 
@@ -339,8 +344,7 @@ def run(spark: pyspark.sql.SparkSession,
         print(f'{indents}compute the average of the parameters')
         n_paramgroups = params_rdd.getNumPartitions()
         params_dict = (
-            params_rdd
-            .flatMap(lambda x: x)
+            params_rdd.flatMap(lambda x: x)
             .reduceByKey(lambda arr1, arr2: arr1 + arr2)
             .mapValues(lambda arr: arr / n_paramgroups)
             .collectAsMap()
@@ -375,7 +379,7 @@ def run(spark: pyspark.sql.SparkSession,
         'pu': pu_bcast.value,
         'item_index_id': item_index_id_bcast.value,
         'user_index_id': user_index_id_bcast.value,
-        'u_impl_fdb': u_impl_fdb_bcast.value
+        'u_impl_fdb': u_impl_fdb_bcast.value,
     }
     # 6.1 create the block information
     u_batch = 500
@@ -391,12 +395,14 @@ def run(spark: pyspark.sql.SparkSession,
     )
 
     # 7. create a spark dataframe
-    schema = StructType([
-        StructField(item_col, StringType()),
-        StructField(user_col, StringType()),
-        StructField(str(rating_col) + '_pred', DoubleType()),
-        StructField('rank', IntegerType())
-    ])
+    schema = StructType(
+        [
+            StructField(item_col, StringType()),
+            StructField(user_col, StringType()),
+            StructField(str(rating_col) + '_pred', DoubleType()),
+            StructField('rank', IntegerType()),
+        ]
+    )
     output_sdf = output_rdd.toDF(schema)
     output_n_rows = output_sdf.count()
     # output_n_items = output_sdf.select([item_col]).distinct().count()

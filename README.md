@@ -34,14 +34,18 @@ git clone git@bitbucket.org:citomhuang/spark_svdpp.git
 
 ```bash
 cd spark_svdpp
-conda env create -f conda.yaml
-conda activate spark-svdpp-env
+
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -U pip setuptools wheel
+python3 -m pip install -r requirements.txt
+python3 -m pip install -r requirements-dev.txt  # development purpose
 ```
 
 #### Run the tests
 
 ```bash
-pytest spark_svdpp/tests
+pytest spark_svdpp
 ```
 
 ## Run a example
@@ -52,12 +56,8 @@ pytest spark_svdpp/tests
 
 ## References
 
-1. [Factorization Meets the Neighborhood: A Multifaceted Collaborative Filtering Model. Yehuda Koren, KDD’08](https://www.cs.rochester.edu/twiki/pub/Main/HarpSeminar/Factorization_Meets_the_Neighborhood-_a_Multifaceted_Collaborative_Filtering_Model.pdf)
-
-2. [Spark: Cluster Computing with Working Sets](https://www.usenix.org/legacy/event/hotcloud10/tech/full_papers/Zaharia.pdf)
-
-3. [Scaling Collaborative Filtering with PySpark](https://engineeringblog.yelp.com/2018/05/scaling-collaborative-filtering-with-pyspark.html)
-
-4. [Running Spark on YARN](https://spark.apache.org/docs/latest/running-on-yarn.html)
-
-5. [NicolasHug/Surprise](https://github.com/NicolasHug/Surprise)
+- [Factorization Meets the Neighborhood: A Multifaceted Collaborative Filtering Model. Yehuda Koren, KDD’08](https://www.cs.rochester.edu/twiki/pub/Main/HarpSeminar/Factorization_Meets_the_Neighborhood-_a_Multifaceted_Collaborative_Filtering_Model.pdf)
+- [Spark: Cluster Computing with Working Sets](https://www.usenix.org/legacy/event/hotcloud10/tech/full_papers/Zaharia.pdf)
+- [Scaling Collaborative Filtering with PySpark](https://engineeringblog.yelp.com/2018/05/scaling-collaborative-filtering-with-pyspark.html)
+- [Running Spark on YARN](https://spark.apache.org/docs/latest/running-on-yarn.html)
+- [NicolasHug/Surprise](https://github.com/NicolasHug/Surprise)

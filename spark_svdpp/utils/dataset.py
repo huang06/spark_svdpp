@@ -1,9 +1,10 @@
-"""Dataset"""
+"""Dataset."""
+from typing import Any
+
 import numpy as np
 import pyspark
 from pyspark.sql import functions as F
 from pyspark.sql.types import IntegerType
-
 
 DEFAULT_ITEM_COL = 'i'
 DEFAULT_USER_COL = 'u'
@@ -13,35 +14,36 @@ DEFAULT_NUM_PARTITIONS = 5
 
 class Dataset:
     """Dataset class."""
-    def __init__(self):
-        self.item_id_index = None
-        self.user_id_index = None
-        self.item_index_id = None
-        self.user_index_id = None
-        self.train = None
-        self.n_items = None
-        self.n_users = None
-        self.ur = None
 
-    def get_samples(self, k: int):
+    item_id_index: dict[int, int]
+    user_id_index: dict[int, int]
+    item_index_id: dict[int, int]
+    user_index_id: dict[int, int]
+    train: Any  # TODO: improve type hint
+    n_items: int
+    n_users: int
+    ur: dict[int, list[int]]
+
+    def get_samples(self, k: int) -> Any:  # TODO: improve type hint
         def get_samples_local(par, k):
             assert len(par[0]) == len(par[1])
             assert k >= 1
             n_elements = len(par[0])
             n_samples = min(n_elements, k)
             indices = np.random.choice(range(n_elements), n_samples).tolist()
-            return (
-                [par[0][idx] for idx in indices], [par[1][idx] for idx in indices]
-            )
+            return ([par[0][idx] for idx in indices], [par[1][idx] for idx in indices])
+
         return self.train.map(lambda par: get_samples_local(par, k))
 
-    def load_dataset(self,
-                     spark: pyspark.sql.SparkSession,
-                     path: str,
-                     item_col: str = DEFAULT_ITEM_COL,
-                     user_col: str = DEFAULT_USER_COL,
-                     rating_col: str = DEFAULT_RATING_COL,
-                     n_pars: int = DEFAULT_NUM_PARTITIONS) -> None:
+    def load_dataset(
+        self,
+        spark: pyspark.sql.SparkSession,
+        path: str,
+        item_col: str = DEFAULT_ITEM_COL,
+        user_col: str = DEFAULT_USER_COL,
+        rating_col: str = DEFAULT_RATING_COL,
+        n_pars: int = DEFAULT_NUM_PARTITIONS,
+    ) -> None:
         """Load dataset."""
         # check parameters
         if not isinstance(spark, pyspark.sql.SparkSession):
@@ -62,21 +64,23 @@ class Dataset:
                 raise ValueError(f'column {colname} not in data')
 
         # make mapper
-        item_index_id = {iidx: iid for iidx, iid in enumerate(sdf1.select(item_col).distinct().rdd.map(lambda x: x[0]).collect())}
-        user_index_id = {uidx: uid for uidx, uid in enumerate(sdf1.select(user_col).distinct().rdd.map(lambda x: x[0]).collect())}
+        item_index_id = {
+            iidx: iid
+            for iidx, iid in enumerate(sdf1.select(item_col).distinct().rdd.map(lambda x: x[0]).collect())
+        }
+        user_index_id = {
+            uidx: uid
+            for uidx, uid in enumerate(sdf1.select(user_col).distinct().rdd.map(lambda x: x[0]).collect())
+        }
         item_id_index = {iid: iidx for iidx, iid in item_index_id.items()}
         user_id_index = {uid: uidx for uidx, uid in user_index_id.items()}
         mapforwardI = F.udf(item_id_index.get, IntegerType())
         mapforwardU = F.udf(user_id_index.get, IntegerType())
-        sdf2 = (
-            sdf1
-            .withColumn(item_col, mapforwardI(sdf1[item_col]))
-            .withColumn(user_col, mapforwardU(sdf1[user_col]))
+        sdf2 = sdf1.withColumn(item_col, mapforwardI(sdf1[item_col])).withColumn(
+            user_col, mapforwardU(sdf1[user_col])
         )
         ur = (
-            sdf2
-            .groupby(user_col)
-            .agg(F.collect_set(item_col)).rdd.collectAsMap()
+            sdf2.groupby(user_col).agg(F.collect_set(item_col)).rdd.collectAsMap()
         )  # return a dict: key denotes user_index, value denotes item_indices user interacted.
 
         # TODO should we eliminate the redundant map-processes ?
