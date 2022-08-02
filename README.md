@@ -2,56 +2,42 @@
 
 ![pyspark-flow](img/pyspark-flow.png)
 
-## Getting Started
-
-### Prerequisites
+## Prerequisites
 
 You need to install *Apache Hadoop* and *Apache Spark* on every nodes of the cluster.
 
-#### Install Hadoop
+### Install Hadoop
 
 ```bash
 tar zxvf hadoop-3.y.z.tgz
 ln -s /your/hadoop/path/hadoop-3.x.z /your/hadoop/path/hadoop
 ```
 
-#### Install Spark
+### Install Spark
 
 ```bash
 tar zxvf spark-2.y.z-bin-hadoop2.7.tgz
 ln -s /your/spark/path/spark-2.y.z /your/spark/path/spark
 ```
 
-### Installing
+## Getting Started
 
-#### Clone the repository
+### Create the Python environment
 
 ```bash
-git clone git@bitbucket.org:citomhuang/spark_svdpp.git
+make python
 ```
 
-#### Create the Python environment
+### Run tests
 
 ```bash
-cd spark_svdpp
-
-python3 -m venv .venv
-source .venv/bin/activate
-python3 -m pip install -U pip setuptools wheel
-python3 -m pip install -r requirements.txt
-python3 -m pip install -r requirements-dev.txt  # development purpose
+make test
 ```
 
-#### Run the tests
+### Run example
 
 ```bash
-pytest spark_svdpp
-```
-
-## Run a example
-
-```bash
-./yarn-client.sh
+make example
 ```
 
 ## References
