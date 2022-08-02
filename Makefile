@@ -18,3 +18,12 @@ test:
 .PHONY: example
 example:
 	@source .venv/bin/activate && ./yarn-client.sh
+
+.PHONY: clean
+clean:
+	@rm -f spark_svdpp.zip
+	@rm -rf spark-warehouse/
+	@rm -rf .pytest_cache/
+	@rm -rf dist/
+	@rm -rf build/
+	@rm -rf spark_svdpp.egg-info/
