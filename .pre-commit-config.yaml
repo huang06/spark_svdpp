@@ -20,25 +20,20 @@ repos:
       - id: python-use-type-annotations
       - id: python-no-log-warn
   - repo: https://github.com/asottile/pyupgrade
-    rev: v2.37.3
+    rev: v2.38.0
     hooks:
       - id: pyupgrade
         args: ["--py310-plus"]
   - repo: https://github.com/psf/black
-    rev: 22.6.0
+    rev: 22.8.0
     hooks:
       - id: black
-  - repo: https://github.com/markdownlint/markdownlint
-    rev: v0.11.0
-    hooks:
-      - id: markdownlint
-        args: [-s, .markdownlint.rb]
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.27.1
+    rev: v1.28.0
     hooks:
       - id: yamllint
   - repo: https://github.com/PyCQA/flake8
-    rev: 5.0.3
+    rev: 5.0.4
     hooks:
       - id: flake8
         additional_dependencies:
@@ -62,7 +57,7 @@ repos:
     hooks:
       - id: mypy
   - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v1.4.0
+    rev: v2.0.0
     hooks:
       - id: conventional-pre-commit
         stages: [commit-msg]
@@ -74,3 +69,11 @@ repos:
         language: python
         files: ^spark_svd/
         types: [file, python]
+      - id: lint-markdown
+        name: Run markdownlint
+        description: Checks the style of Markdown files.
+        entry: markdownlint
+        language: node
+        types: [markdown]
+        files: \.(md|mdown|markdown)$
+        additional_dependencies: ['markdownlint-cli']
